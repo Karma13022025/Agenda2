@@ -261,3 +261,10 @@ body {
   border-radius: 12px;
   border: 2px dashed #ddd;
 }
+
+/* Color naranja cuando pide confirmación el botón */
+.btn-confirmar {
+  background: #ff9800 !important;
+  color: white !important;
+  border-color: #ff9800 !important;
+}

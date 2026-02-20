@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
-import { db } from '../src/services/firebase';
+import { db } from '../services/firebase';
 
 export default function ListaPedidos() {
-  // Ahora guardamos TODOS los pedidos
   const [todosLosPedidos, setTodosLosPedidos] = useState([]);
-  
-  // Este estado controla qué pestaña estamos viendo (false = Pendientes, true = Historial)
   const [verHistorial, setVerHistorial] = useState(false); 
+  
+  // 👇 NUEVO: Estado para saber qué botón estamos confirmando
+  const [confirmandoId, setConfirmandoId] = useState(null);
 
   useEffect(() => {
-    // Pedimos la información a Firebase ordenada por fecha
     const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
-    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const pedidosData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -20,22 +18,29 @@ export default function ListaPedidos() {
       }));
       setTodosLosPedidos(pedidosData);
     });
-
     return () => unsubscribe();
   }, []);
 
+  // 👇 NUEVA LÓGICA DEL BOTÓN (Doble toque sin usar window.confirm)
   const marcarComoEntregado = async (id) => {
-    const confirmar = window.confirm("¿Estás segura de que ya entregaste este pastel?");
-    if (!confirmar) return;
+    // Si es el primer toque, lo marcamos como "esperando confirmación"
+    if (confirmandoId !== id) {
+      setConfirmandoId(id);
+      // Opcional: Si se arrepiente y no lo toca de nuevo en 3 segundos, regresa a la normalidad
+      setTimeout(() => setConfirmandoId(null), 3000);
+      return;
+    }
 
+    // Si es el segundo toque, ahora sí guardamos en Firebase
     try {
       const pedidoRef = doc(db, "pedidos", id);
       await updateDoc(pedidoRef, {
         estadoPedido: "Entregado"
       });
+      setConfirmandoId(null); // Limpiamos
     } catch (error) {
       console.error("Error al actualizar:", error);
-      alert("❌ Hubo un error al marcar el pedido como entregado.");
+      alert("❌ Hubo un error. Revisa tu conexión.");
     }
   };
 
@@ -45,28 +50,17 @@ export default function ListaPedidos() {
     return '#f44336';
   };
 
-  // 👇 MAGIA AQUÍ: Filtramos la lista en dos grupos diferentes
   const pendientes = todosLosPedidos.filter(p => p.estadoPedido !== "Entregado");
   const historial = todosLosPedidos.filter(p => p.estadoPedido === "Entregado");
-
-  // Decidimos qué grupo mostrar en pantalla según la pestaña que tocaste
   const pedidosAMostrar = verHistorial ? historial : pendientes;
 
   return (
     <div className="lista-moderna">
-      
-      {/* --- NUEVO: BARRA DE PESTAÑAS --- */}
       <div className="tabs-container">
-        <button 
-          className={`tab-btn ${!verHistorial ? 'activa' : ''}`} 
-          onClick={() => setVerHistorial(false)}
-        >
+        <button className={`tab-btn ${!verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(false)}>
           📦 Pendientes ({pendientes.length})
         </button>
-        <button 
-          className={`tab-btn ${verHistorial ? 'activa' : ''}`} 
-          onClick={() => setVerHistorial(true)}
-        >
+        <button className={`tab-btn ${verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(true)}>
           📚 Historial ({historial.length})
         </button>
       </div>
@@ -100,33 +94,23 @@ export default function ListaPedidos() {
               {pedido.fotoUrl && (
                 <div style={{ marginTop: '15px' }}>
                   <strong style={{ fontSize: '0.9rem', color: '#555' }}>📸 Diseño de referencia:</strong>
-                  <img 
-                    src={pedido.fotoUrl} 
-                    alt="Diseño del pastel" 
-                    style={{ 
-                      width: '100%', 
-                      maxHeight: '200px', 
-                      objectFit: 'cover', 
-                      borderRadius: '8px',
-                      marginTop: '8px',
-                      border: '1px solid #eee'
-                    }} 
-                  />
+                  <img src={pedido.fotoUrl} alt="Diseño del pastel" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px', border: '1px solid #eee'}} />
                 </div>
               )}
             </div>
             
-            {/* Si estamos en "Pendientes", mostramos el botón. Si estamos en "Historial", mostramos un texto. */}
             {!verHistorial ? (
               <div className="pie-pedido">
-                <button className="btn-completar" onClick={() => marcarComoEntregado(pedido.id)}>
-                  ✅ Marcar Entregado
+                {/* 👇 EL BOTÓN AHORA CAMBIA DE TEXTO Y COLOR 👇 */}
+                <button 
+                  className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} 
+                  onClick={() => marcarComoEntregado(pedido.id)}
+                >
+                  {confirmandoId === pedido.id ? '⚠️ Toca de nuevo para confirmar' : '✅ Marcar Entregado'}
                 </button>
               </div>
             ) : (
-              <div className="pie-historial">
-                🎉 Entregado con éxito
-              </div>
+              <div className="pie-historial">🎉 Entregado con éxito</div>
             )}
 
           </div>
@@ -134,9 +118,7 @@ export default function ListaPedidos() {
         
         {pedidosAMostrar.length === 0 && (
           <p className="mensaje-vacio">
-            {verHistorial 
-              ? "Aún no tienes pedidos entregados en tu historial." 
-              : "No hay pedidos pendientes. ¡A vender! 🍰"}
+            {verHistorial ? "Aún no tienes pedidos entregados en tu historial." : "No hay pedidos pendientes. ¡A vender! 🍰"}
           </p>
         )}
       </div>
