@@ -1,0 +1,263 @@
+/* --- 1. ESTILOS GENERALES Y FONDO --- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #fdf2f8; /* Un fondo rosa pastel muy suave y parejo */
+  color: #333;
+}
+
+.contenedor-principal {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 15px; /* Margen para que no pegue en las orillas del celular */
+}
+
+/* --- 2. ENCABEZADO --- */
+.header {
+  text-align: center;
+  padding: 20px 0;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  color: #d81b60;
+  font-size: 2rem;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* --- 3. ESTRUCTURA RESPONSIVE (MAGIA) --- */
+
+/* Por defecto (Para tu iPhone 11): Todo en una sola columna */
+.grid-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  width: 100%;
+}
+
+.columna-izq, .columna-der {
+  width: 100%;
+}
+
+/* Para pantallas grandes (Tu laptop Huawei o iPad en horizontal): Dos columnas */
+@media (min-width: 800px) {
+  .grid-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .columna-izq {
+    flex: 1;
+    position: sticky; /* El formulario se queda quieto mientras bajas */
+    top: 20px;
+  }
+  
+  .columna-der {
+    flex: 1.5;
+  }
+}
+
+/* --- 4. ESTILOS DEL FORMULARIO --- */
+.formulario-moderno {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-top: 6px solid #ff69b4;
+}
+
+.formulario-moderno h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.campo, .campo-pago {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo label, .campo-pago label {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.campo input, .campo select, .campo textarea, .campo-pago select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #fafafa;
+  transition: border 0.3s;
+}
+
+.campo input:focus, .campo textarea:focus, .campo select:focus {
+  outline: none;
+  border-color: #ff69b4;
+  background-color: white;
+}
+
+.btn-guardar {
+  background-color: #ff69b4;
+  color: white;
+  padding: 15px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s;
+}
+
+.btn-guardar:hover {
+  background-color: #e0529d;
+}
+
+.btn-guardar:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* --- 5. ESTILOS DE LA LISTA Y PESTAÑAS --- */
+.lista-moderna h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tab-btn.activa {
+  background: #ff69b4;
+  color: white;
+  border-color: #ff69b4;
+  box-shadow: 0 4px 10px rgba(255, 105, 180, 0.2);
+}
+
+.grid-pedidos {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tarjeta-pedido-moderna {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+  border-left: 6px solid #ff69b4;
+}
+
+.tarjeta-historial {
+  border-left: 6px solid #ccc;
+  opacity: 0.9;
+  background: #f9f9f9;
+}
+
+.cabecera-pedido {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.cabecera-pedido h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.fecha-badge {
+  background: #fdf2f8;
+  color: #d81b60;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.cuerpo-pedido p {
+  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.notas-caja {
+  background: #fff9c4;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  color: #666;
+}
+
+.notas-caja p {
+  margin: 5px 0 0 0;
+  font-style: italic;
+}
+
+.btn-completar {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  background: transparent;
+  color: #4caf50;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-completar:hover {
+  background: #4caf50;
+  color: white;
+}
+
+.pie-historial {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  font-weight: bold;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+}
+
+.mensaje-vacio {
+  text-align: center;
+  color: #888;
+  padding: 30px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #ddd;
+}
