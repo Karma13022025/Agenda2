@@ -1,111 +1,133 @@
-/* --- 1. ESTILOS GENERALES Y FONDO --- */
+/* --- 1. ESTILOS GENERALES Y RESET --- */
 * {
-  box-sizing: border-box;
+  box-sizing: border-box; /* 👈 Regla vital para que nada se salga de la pantalla */
 }
 
 body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: #fdf2f8; /* Un fondo rosa pastel muy suave y parejo */
+  background-color: #fdf2f8; 
   color: #333;
+  overflow-x: hidden; /* Evita rebotes laterales en celular */
 }
 
 .contenedor-principal {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 15px; /* Margen para que no pegue en las orillas del celular */
+  padding: 10px; /* Un poco menos de espacio en las orillas para ganar pantalla */
 }
 
-/* --- 2. ENCABEZADO --- */
+/* --- 2. ENCABEZADO CON BOTÓN SALIR --- */
 .header {
-  text-align: center;
-  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
   margin-bottom: 10px;
 }
 
 .header h1 {
   color: #d81b60;
-  font-size: 2rem;
+  font-size: 1.4rem; /* Un poco más pequeño para que quepa con el botón */
   margin: 0;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
 }
 
-/* --- 3. ESTRUCTURA RESPONSIVE (MAGIA) --- */
+.btn-salir {
+  background: white;
+  border: 2px solid #ff69b4;
+  color: #d81b60;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
 
-/* Por defecto (Para tu iPhone 11): Todo en una sola columna */
+/* --- 3. ESTRUCTURA RESPONSIVE --- */
 .grid-layout {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 20px;
   width: 100%;
 }
 
-.columna-izq, .columna-der {
-  width: 100%;
-}
-
-/* Para pantallas grandes (Tu laptop Huawei o iPad en horizontal): Dos columnas */
 @media (min-width: 800px) {
   .grid-layout {
     flex-direction: row;
     align-items: flex-start;
   }
-  
-  .columna-izq {
-    flex: 1;
-    position: sticky; /* El formulario se queda quieto mientras bajas */
-    top: 20px;
-  }
-  
-  .columna-der {
-    flex: 1.5;
-  }
+  .columna-izq { flex: 1; position: sticky; top: 20px; }
+  .columna-der { flex: 1.5; }
+  .header h1 { font-size: 2rem; }
 }
 
 /* --- 4. ESTILOS DEL FORMULARIO --- */
 .formulario-moderno {
   background: white;
-  padding: 25px;
+  padding: 20px; /* Ajustado para celular */
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
   gap: 15px;
   border-top: 6px solid #ff69b4;
+  width: 100%;
 }
 
 .formulario-moderno h2 {
   margin-top: 0;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   color: #333;
 }
 
-.campo, .campo-pago {
+.campo {
   display: flex;
   flex-direction: column;
 }
 
-.campo label, .campo-pago label {
+/* --- 5. CORRECCIÓN DE ANTICIPO Y PRECIO (FLUIDO) --- */
+.finanzas-inputs {
+  display: flex;
+  gap: 10px; /* Espacio entre los dos */
+  width: 100%;
+}
+
+.finanzas-inputs .campo {
+  flex: 1; /* Hacen que ambos midan lo mismo */
+}
+
+/* Ajuste específico para que en celulares muy chicos no se amontone el texto */
+@media (max-width: 400px) {
+  .finanzas-inputs {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
+.campo label {
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #666;
   margin-bottom: 5px;
 }
 
-.campo input, .campo select, .campo textarea, .campo-pago select {
+.campo input, .campo select, .campo textarea {
+  width: 100%; /* Ocupa todo el ancho de su columna */
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 16px; /* 👈 16px exactos evita que el iPhone haga zoom al escribir */
   background-color: #fafafa;
-  transition: border 0.3s;
 }
 
-.campo input:focus, .campo textarea:focus, .campo select:focus {
-  outline: none;
-  border-color: #ff69b4;
-  background-color: white;
+/* --- 6. CORRECCIÓN DE NOTAS (NO SE SALE) --- */
+.campo textarea {
+  max-width: 100%; /* No permite que se salga de la tarjeta blanca */
+  min-width: 100%;
+  min-height: 80px;
+  resize: vertical; /* Solo permite estirar hacia abajo */
 }
 
 .btn-guardar {
@@ -118,110 +140,69 @@ body {
   border-radius: 8px;
   cursor: pointer;
   margin-top: 10px;
-  transition: background 0.3s;
 }
 
-.btn-guardar:hover {
-  background-color: #e0529d;
-}
-
-.btn-guardar:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-/* --- 5. ESTILOS DE LA LISTA Y PESTAÑAS --- */
-.lista-moderna h2 {
-  margin-top: 0;
-  font-size: 1.4rem;
-}
-
-.tabs-container {
-  display: flex;
+/* --- 7. LISTA Y PANEL DE FINANZAS --- */
+.finanzas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 20px;
 }
 
+.card-finanzas {
+  background: white;
+  padding: 15px 5px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-bottom: 4px solid #ddd;
+}
+
+.card-finanzas h3 {
+  margin: 5px 0 0 0;
+  font-size: 1.2rem;
+}
+
+.card-finanzas.historial { border-bottom-color: #4caf50; }
+.card-finanzas.anticipos { border-bottom-color: #ff9800; }
+
+.tabs-container { display: flex; gap: 10px; margin-bottom: 15px; }
+
 .tab-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px;
   background: white;
   border: 1px solid #ddd;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #888;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
 .tab-btn.activa {
   background: #ff69b4;
   color: white;
   border-color: #ff69b4;
-  box-shadow: 0 4px 10px rgba(255, 105, 180, 0.2);
 }
 
-.grid-pedidos {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
+/* --- 8. TARJETAS DE PEDIDO --- */
 .tarjeta-pedido-moderna {
   background: white;
   border-radius: 15px;
-  padding: 20px;
+  padding: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.04);
   border-left: 6px solid #ff69b4;
-}
-
-.tarjeta-historial {
-  border-left: 6px solid #ccc;
-  opacity: 0.9;
-  background: #f9f9f9;
-}
-
-.cabecera-pedido {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-}
-
-.cabecera-pedido h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.fecha-badge {
-  background: #fdf2f8;
-  color: #d81b60;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-}
-
-.cuerpo-pedido p {
-  margin: 8px 0;
-  font-size: 0.95rem;
-  color: #555;
+  width: 100%;
 }
 
 .notas-caja {
   background: #fff9c4;
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
   margin-top: 10px;
-  color: #666;
-}
-
-.notas-caja p {
-  margin: 5px 0 0 0;
-  font-style: italic;
+  word-wrap: break-word; /* 👈 Rompe el texto largo para que no se salga */
+  font-size: 0.9rem;
 }
 
 .btn-completar {
@@ -233,71 +214,10 @@ body {
   border: 2px solid #4caf50;
   border-radius: 8px;
   font-weight: bold;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
-.btn-completar:hover {
-  background: #4caf50;
-  color: white;
-}
-
-.pie-historial {
-  text-align: center;
-  color: #888;
-  font-style: italic;
-  font-weight: bold;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #eee;
-}
-
-.mensaje-vacio {
-  text-align: center;
-  color: #888;
-  padding: 30px 20px;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #ddd;
-}
-
-/* Color naranja cuando pide confirmación el botón */
 .btn-confirmar {
   background: #ff9800 !important;
   color: white !important;
   border-color: #ff9800 !important;
 }
-
-/* --- PANEL DE FINANZAS --- */
-.finanzas-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.card-finanzas {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border-bottom: 4px solid #ddd;
-}
-
-.card-finanzas span {
-  font-size: 0.8rem;
-  color: #888;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-.card-finanzas h3 {
-  margin: 5px 0 0 0;
-  font-size: 1.4rem;
-  color: #333;
-}
-
-.card-finanzas.historial { border-bottom-color: #4caf50; } /* Verde para lo ya ganado */
-.card-finanzas.anticipos { border-bottom-color: #ff9800; } /* Naranja para los anticipos */

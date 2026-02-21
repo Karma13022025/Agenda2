@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { collection, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from './services/firebase';
+import { collection, addDoc } from "firebase/firestore"; 
+import { db } from './services/firebase'; // Ya no necesitamos storage de firebase
 
 export default function FormularioPedido() {
   const [cliente, setCliente] = useState('');
@@ -11,50 +10,55 @@ export default function FormularioPedido() {
   const [cantidadAnticipo, setCantidadAnticipo] = useState('');
   const [estadoPago, setEstadoPago] = useState('Pendiente');
   const [notas, setNotas] = useState('');
-  const [imagen, setImagen] = useState(null);
-  const [cargando, setCargando] = useState(false);
+  const [foto, setFoto] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+
+  // 👇 PEGA TU LLAVE DE IMGBB AQUÍ ADENTRO 👇
+  const IMGBB_API_KEY = "78867f44959776dba58685f514527d5b";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🛡️ VALIDACIONES DE SEGURIDAD 🛡️
+    // 🛡️ VALIDACIONES DE SEGURIDAD
     const precio = Number(precioTotal);
     const anticipo = Number(cantidadAnticipo) || 0;
 
-    // 1. Si puso cantidad en anticipo pero dejó el estado como "Pendiente"
     if (anticipo > 0 && estadoPago === 'Pendiente') {
-      alert("⚠️ Error: Si hay una cantidad de anticipo, el estado no puede ser 'Sin anticipo'. Cámbialo a 'Anticipo entregado'.");
-      return; // Detiene la ejecución
+      return alert("⚠️ Error: Si hay anticipo, cambia el estado a 'Anticipo entregado'.");
     }
-
-    // 2. Si puso "Anticipo entregado" pero la cantidad es 0 o está vacía
     if (estadoPago === 'Anticipo' && anticipo <= 0) {
-      alert("⚠️ Error: Marcaste 'Anticipo entregado', por favor escribe la cantidad del anticipo.");
-      return;
+      return alert("⚠️ Error: Escribe la cantidad del anticipo.");
     }
-
-    // 3. Validación extra: Que el anticipo no sea mayor al total
     if (anticipo > precio) {
-      alert("⚠️ Error: El anticipo no puede ser mayor al precio total del pastel.");
-      return;
+      return alert("⚠️ Error: El anticipo no puede ser mayor al precio total.");
     }
 
-    // 4. Si marcó "Liquidado", el anticipo debería ser igual al total (opcional, pero recomendado)
-    if (estadoPago === 'Liquidado' && anticipo < precio) {
-      const confirmar = window.confirm(`¿Segura que está liquidado? El total es $${precio} y solo anotaste $${anticipo} de pago. ¿Deseas continuar?`);
-      if (!confirmar) return;
-    }
-
-    setCargando(true);
+    setGuardando(true);
 
     try {
       let fotoUrl = "";
-      if (imagen) {
-        const storageRef = ref(storage, `disenos/${Date.now()}-${imagen.name}`);
-        await uploadBytes(storageRef, imagen);
-        fotoUrl = await getDownloadURL(storageRef);
+
+      // 📸 SUBIDA A IMGBB
+      if (foto) {
+        const formData = new FormData();
+        formData.append('image', foto);
+
+        const respuestaImgbb = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const datosImagen = await respuestaImgbb.json();
+        
+        if (datosImagen.success) {
+          fotoUrl = datosImagen.data.url;
+        } else {
+          console.error("Detalle ImgBB:", datosImagen);
+          alert("Hubo un detalle con la foto, pero intentaremos guardar el pedido.");
+        }
       }
 
+      // 💾 GUARDADO EN FIRESTORE
       await addDoc(collection(db, "pedidos"), {
         cliente,
         sabor,
@@ -65,32 +69,29 @@ export default function FormularioPedido() {
         notas,
         fotoUrl,
         estadoPedido: "Pendiente",
-        fechaCreacion: new Date().toISOString()
+        creadoEn: new Date()
       });
-
-      // Limpiar campos
-      setCliente('');
-      setSabor('');
-      setFechaEntrega('');
-      setPrecioTotal('');
-      setCantidadAnticipo('');
-      setEstadoPago('Pendiente');
-      setNotas('');
-      setImagen(null);
       
-      alert("✅ ¡Pedido agendado perfectamente!");
+      alert("✅ ¡Pedido guardado con éxito!");
+      
+      // Limpiar Formulario
+      setCliente(''); setSabor(''); setFechaEntrega('');
+      setPrecioTotal(''); setCantidadAnticipo('');
+      setEstadoPago('Pendiente'); setNotas(''); setFoto(null);
+      if (document.getElementById('input-foto')) document.getElementById('input-foto').value = '';
+      
     } catch (error) {
-      console.error("Error al guardar:", error);
-      alert("❌ Hubo un error al guardar.");
+      alert("❌ Error al guardar. Revisa tu conexión.");
+      console.error(error);
     } finally {
-      setCargando(false);
+      setGuardando(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="formulario-moderno">
       <h2>📝 Agendar Nuevo Pedido</h2>
-
+      
       <div className="campo">
         <label>Nombre del Cliente *</label>
         <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required placeholder="Ej: Ximena Zapata"/>
@@ -106,14 +107,14 @@ export default function FormularioPedido() {
         <input type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} required />
       </div>
 
-      <div className="finanzas-inputs" style={{ display: 'flex', gap: '10px' }}>
-        <div className="campo" style={{ flex: 1 }}>
+      <div className="finanzas-inputs">
+        <div className="campo">
           <label>💰 Precio Total *</label>
-          <input type="number" value={precioTotal} onChange={(e) => setPrecioTotal(e.target.value)} required placeholder="0.00" />
+          <input type="number" value={precioTotal} onChange={(e) => setPrecioTotal(e.target.value)} required placeholder="0" />
         </div>
-        <div className="campo" style={{ flex: 1 }}>
+        <div className="campo">
           <label>💵 Anticipo</label>
-          <input type="number" value={cantidadAnticipo} onChange={(e) => setCantidadAnticipo(e.target.value)} placeholder="0.00" />
+          <input type="number" value={cantidadAnticipo} onChange={(e) => setCantidadAnticipo(e.target.value)} placeholder="0" />
         </div>
       </div>
 
@@ -122,22 +123,22 @@ export default function FormularioPedido() {
         <select value={estadoPago} onChange={(e) => setEstadoPago(e.target.value)}>
           <option value="Pendiente">Sin anticipo (Pendiente)</option>
           <option value="Anticipo">Anticipo entregado</option>
-          <option value="Liquidado">Liquidado (Pagado completo)</option>
+          <option value="Liquidado">Totalmente Liquidado</option>
         </select>
       </div>
 
       <div className="campo">
-        <label>Foto (Opcional)</label>
-        <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files[0])} />
+        <label>Foto del Diseño</label>
+        <input id="input-foto" type="file" accept="image/*" onChange={(e) => setFoto(e.target.files[0])} />
       </div>
 
       <div className="campo">
-        <label>Notas</label>
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej: Sin nueces, escribir 'Feliz Cumpleaños'..."></textarea>
+        <label>Notas o Detalles</label>
+        <textarea rows="3" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej: Sin nueces, escribir 'Feliz Cumpleaños'..."></textarea>
       </div>
 
-      <button type="submit" className="btn-guardar" disabled={cargando}>
-        {cargando ? "⏳ Guardando..." : "Agendar Pedido"}
+      <button type="submit" className="btn-guardar" disabled={guardando}>
+        {guardando ? '🚀 Subiendo foto y guardando...' : 'Agendar Pedido'}
       </button>
     </form>
   );
