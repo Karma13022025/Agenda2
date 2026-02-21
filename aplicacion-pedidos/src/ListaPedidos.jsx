@@ -7,11 +7,12 @@ export default function ListaPedidos() {
   const [verHistorial, setVerHistorial] = useState(false); 
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
-
-  // 👇 NUEVOS ESTADOS PARA LOS AVISOS MODERNOS
-  const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
   const [pedidoABorrar, setPedidoABorrar] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
+
+  // 👇 NUEVO: Estado para ver la foto en grande
+  const [fotoZoom, setFotoZoom] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
@@ -25,7 +26,6 @@ export default function ListaPedidos() {
     return () => unsubscribe();
   }, []);
 
-  // Función para mostrar avisos que desaparecen solos
   const mostrarAviso = (texto, tipo = "exito") => {
     setNotificacion({ texto, tipo });
     setTimeout(() => setNotificacion({ texto: "", tipo: "" }), 3000);
@@ -47,15 +47,12 @@ export default function ListaPedidos() {
     return coincideEstado && coincideNombre;
   });
 
-  // --- 🗑️ LÓGICA PARA BORRAR ---
   const ejecutarBorrado = async () => {
     try {
       await deleteDoc(doc(db, "pedidos", pedidoABorrar.id));
-      setPedidoABorrar(null); // Cerramos el modal
-      mostrarAviso("🗑️ Pedido eliminado correctamente");
-    } catch (error) {
-      mostrarAviso("❌ Error al eliminar", "error");
-    }
+      setPedidoABorrar(null);
+      mostrarAviso("🗑️ Pedido eliminado");
+    } catch (e) { mostrarAviso("❌ Error al borrar", "error"); }
   };
 
   const marcarComoEntregado = async (id) => {
@@ -65,13 +62,10 @@ export default function ListaPedidos() {
       return;
     }
     try {
-      const pedidoRef = doc(db, "pedidos", id);
-      await updateDoc(pedidoRef, { estadoPedido: "Entregado" });
+      await updateDoc(doc(db, "pedidos", id), { estadoPedido: "Entregado" });
       setConfirmandoId(null);
-      mostrarAviso("✅ ¡Pedido entregado!");
-    } catch (error) {
-      mostrarAviso("❌ Error al actualizar", "error");
-    }
+      mostrarAviso("✅ ¡Entregado!");
+    } catch (e) { mostrarAviso("❌ Error", "error"); }
   };
 
   const guardarCambios = async (e) => {
@@ -89,9 +83,7 @@ export default function ListaPedidos() {
       });
       setPedidoParaEditar(null);
       mostrarAviso("✅ Cambios guardados");
-    } catch (error) {
-      mostrarAviso("❌ Error al guardar", "error");
-    }
+    } catch (e) { mostrarAviso("❌ Error", "error"); }
   };
 
   const getColorPago = (estado) => {
@@ -102,13 +94,7 @@ export default function ListaPedidos() {
 
   return (
     <div className="lista-moderna">
-      
-      {/* 🔔 NOTIFICACIÓN FLOTANTE */}
-      {notificacion.texto && (
-        <div className={`notificacion-flotante notificacion-${notificacion.tipo}`}>
-          {notificacion.texto}
-        </div>
-      )}
+      {notificacion.texto && <div className={`notificacion-flotante notificacion-${notificacion.tipo}`}>{notificacion.texto}</div>}
 
       <div className="finanzas-grid">
         <div className="card-finanzas historial"><span>Cobrado</span><h3>${totalHistorial.toLocaleString()}</h3></div>
@@ -116,13 +102,7 @@ export default function ListaPedidos() {
       </div>
 
       <div className="buscador-container" style={{ marginBottom: '15px' }}>
-        <input 
-          type="text" 
-          placeholder="🔍 Buscar cliente..." 
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="input-buscador"
-        />
+        <input type="text" placeholder="🔍 Buscar cliente..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="input-buscador" />
       </div>
 
       <div className="tabs-container">
@@ -142,31 +122,58 @@ export default function ListaPedidos() {
               <span className="fecha-badge">📅 {pedido.fechaEntrega}</span>
               <p style={{marginTop: '10px'}}><strong>🎂 Pastel:</strong> {pedido.sabor}</p>
               <p><strong>💰 Total:</strong> ${pedido.precioTotal || 0} | <strong>💵 Pago:</strong> <span style={{ color: getColorPago(pedido.estadoPago) }}>{pedido.estadoPago}</span></p>
-              {pedido.fotoUrl && <img src={pedido.fotoUrl} alt="Pastel" style={{ width: '100%', borderRadius: '12px', marginTop: '10px' }} />}
+              
+              {/* 📸 FOTO CLICKABLE */}
+              {pedido.fotoUrl && (
+                <div style={{ position: 'relative' }}>
+                  <img 
+                    src={pedido.fotoUrl} 
+                    alt="Pastel" 
+                    onClick={() => setFotoZoom(pedido.fotoUrl)} // 👈 Al tocarla se guarda en fotoZoom
+                    style={{ width: '100%', borderRadius: '12px', marginTop: '10px', cursor: 'zoom-in', display: 'block' }} 
+                  />
+                  <span style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem' }}>🔍 Toca para ampliar</span>
+                </div>
+              )}
             </div>
             
             <div className="pie-pedido" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
               <button className="btn-secundario" onClick={() => setPedidoParaEditar(pedido)}>✏️ Editar</button>
               {!verHistorial && (
-                <button 
-                  className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} 
-                  onClick={() => marcarComoEntregado(pedido.id)}
-                >
+                <button className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} onClick={() => marcarComoEntregado(pedido.id)}>
                   {confirmandoId === pedido.id ? '⚠️ Confirma' : '✅ Entregado'}
                 </button>
               )}
             </div>
           </div>
         ))}
-        {pedidosFiltrados.length === 0 && <p className="mensaje-vacio">No hay resultados.</p>}
       </div>
 
-      {/* 🗑️ MODAL DE CONFIRMACIÓN PARA BORRAR */}
+      {/* 🔍 VISOR DE FOTO EN GRANDE */}
+      {fotoZoom && (
+        <div className="modal-overlay" onClick={() => setFotoZoom(null)} style={{ background: 'rgba(0,0,0,0.9)', zIndex: 3000 }}>
+          <div style={{ position: 'relative', width: '95%', maxWidth: '800px', display: 'flex', justifyContent: 'center' }}>
+             <img 
+              src={fotoZoom} 
+              alt="Zoom" 
+              style={{ width: '100%', borderRadius: '8px', maxHeight: '85vh', objectFit: 'contain' }} 
+            />
+            <button 
+              onClick={() => setFotoZoom(null)}
+              style={{ position: 'absolute', top: '-40px', right: '0', background: 'white', border: 'none', padding: '8px 15px', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              CERRAR ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BORRAR (Igual que antes) */}
       {pedidoABorrar && (
         <div className="modal-overlay">
           <div className="modal-content" style={{textAlign: 'center'}}>
             <h3 style={{color: '#d81b60'}}>¿Borrar pedido?</h3>
-            <p>Se eliminará el pedido de <strong>{pedidoABorrar.cliente}</strong> permanentemente.</p>
+            <p>Se eliminará permanentemente.</p>
             <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
               <button className="btn-cancelar" onClick={() => setPedidoABorrar(null)}>No, volver</button>
               <button className="btn-borrar-confirmar" onClick={ejecutarBorrado}>Sí, borrar</button>
@@ -175,7 +182,7 @@ export default function ListaPedidos() {
         </div>
       )}
 
-      {/* 🖼️ MODAL DE EDICIÓN */}
+      {/* MODAL EDITAR (Igual que antes) */}
       {pedidoParaEditar && (
         <div className="modal-overlay">
           <div className="modal-content">
