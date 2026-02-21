@@ -6,6 +6,9 @@ export default function ListaPedidos() {
   const [todosLosPedidos, setTodosLosPedidos] = useState([]);
   const [verHistorial, setVerHistorial] = useState(false); 
   const [confirmandoId, setConfirmandoId] = useState(null);
+  
+  // 👇 NUEVOS ESTADOS PARA LA EDICIÓN
+  const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
@@ -19,7 +22,7 @@ export default function ListaPedidos() {
     return () => unsubscribe();
   }, []);
 
-  // --- 📊 CÁLCULOS DE FINANZAS ---
+  // --- 📊 CÁLCULOS ---
   const totalHistorial = todosLosPedidos
     .filter(p => p.estadoPedido === "Entregado")
     .reduce((sum, p) => sum + (Number(p.precioTotal) || 0), 0);
@@ -28,23 +31,40 @@ export default function ListaPedidos() {
     .filter(p => p.estadoPedido !== "Entregado")
     .reduce((sum, p) => sum + (Number(p.cantidadAnticipo) || 0), 0);
 
-  // --- ✅ LÓGICA DE ENTREGA (Doble toque para iPhone) ---
+  // --- ✅ LÓGICA DE ENTREGA ---
   const marcarComoEntregado = async (id) => {
     if (confirmandoId !== id) {
       setConfirmandoId(id);
       setTimeout(() => setConfirmandoId(null), 3000);
       return;
     }
-
     try {
       const pedidoRef = doc(db, "pedidos", id);
-      await updateDoc(pedidoRef, {
-        estadoPedido: "Entregado"
-      });
+      await updateDoc(pedidoRef, { estadoPedido: "Entregado" });
       setConfirmandoId(null);
     } catch (error) {
-      console.error("Error al actualizar:", error);
-      alert("❌ Hubo un error al marcar como entregado.");
+      alert("❌ Error al actualizar.");
+    }
+  };
+
+  // --- ✏️ LÓGICA DE GUARDAR EDICIÓN ---
+  const guardarCambios = async (e) => {
+    e.preventDefault();
+    try {
+      const pedidoRef = doc(db, "pedidos", pedidoParaEditar.id);
+      await updateDoc(pedidoRef, {
+        cliente: pedidoParaEditar.cliente,
+        sabor: pedidoParaEditar.sabor,
+        fechaEntrega: pedidoParaEditar.fechaEntrega,
+        precioTotal: Number(pedidoParaEditar.precioTotal),
+        cantidadAnticipo: Number(pedidoParaEditar.cantidadAnticipo),
+        estadoPago: pedidoParaEditar.estadoPago,
+        notas: pedidoParaEditar.notas
+      });
+      setPedidoParaEditar(null); // Cerramos el editor
+      alert("✅ Cambios guardados correctamente.");
+    } catch (error) {
+      alert("❌ No se pudieron guardar los cambios.");
     }
   };
 
@@ -60,33 +80,21 @@ export default function ListaPedidos() {
 
   return (
     <div className="lista-moderna">
-      
-      {/* 💰 PANEL DE FINANZAS */}
+      {/* 💰 FINANZAS */}
       <div className="finanzas-grid">
-        <div className="card-finanzas historial">
-          <span>Cobrado (Historial)</span>
-          <h3>${totalHistorial.toLocaleString()}</h3>
-        </div>
-        <div className="card-finanzas anticipos">
-          <span>Anticipos en mano</span>
-          <h3>${totalAnticiposPendientes.toLocaleString()}</h3>
-        </div>
+        <div className="card-finanzas historial"><span>Cobrado</span><h3>${totalHistorial.toLocaleString()}</h3></div>
+        <div className="card-finanzas anticipos"><span>Anticipos</span><h3>${totalAnticiposPendientes.toLocaleString()}</h3></div>
       </div>
 
-      {/* 📑 PESTAÑAS */}
+      {/* 📑 TABS */}
       <div className="tabs-container">
-        <button className={`tab-btn ${!verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(false)}>
-          📦 Pendientes ({pendientes.length})
-        </button>
-        <button className={`tab-btn ${verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(true)}>
-          📚 Historial ({historial.length})
-        </button>
+        <button className={`tab-btn ${!verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(false)}>📦 Pendientes ({pendientes.length})</button>
+        <button className={`tab-btn ${verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(true)}>📚 Historial ({historial.length})</button>
       </div>
       
       <div className="grid-pedidos">
         {pedidosAMostrar.map(pedido => (
           <div key={pedido.id} className={`tarjeta-pedido-moderna ${verHistorial ? 'tarjeta-historial' : ''}`}>
-            
             <div className="cabecera-pedido">
               <h3>{pedido.cliente}</h3>
               <span className="fecha-badge">📅 {pedido.fechaEntrega}</span>
@@ -94,68 +102,69 @@ export default function ListaPedidos() {
             
             <div className="cuerpo-pedido">
               <p><strong>🎂 Pastel:</strong> {pedido.sabor || pedido.pastel}</p>
-              
-              <p>
-                <strong>💰 Precio Total:</strong> ${pedido.precioTotal || 0}
-              </p>
-
-              <p>
-                <strong>💵 Pago:</strong> 
-                <span style={{ color: getColorPago(pedido.estadoPago), fontWeight: 'bold', marginLeft: '5px' }}>
-                  {pedido.estadoPago}
-                </span>
-                {pedido.estadoPago === 'Anticipo' && ` ($${pedido.cantidadAnticipo})`}
-              </p>
-
-              {pedido.notas && (
-                <div className="notas-caja">
-                  <strong>📝 Notas:</strong> <p>{pedido.notas}</p>
-                </div>
-              )}
-
-              {/* 📸 AQUÍ APARECE LA FOTO DE IMGBB */}
-              {pedido.fotoUrl && (
-                <div style={{ marginTop: '15px' }}>
-                  <strong style={{ fontSize: '0.85rem', color: '#666' }}>📸 Diseño de referencia:</strong>
-                  <img 
-                    src={pedido.fotoUrl} 
-                    alt="Diseño del pastel" 
-                    style={{ 
-                      width: '100%', 
-                      maxHeight: '250px', 
-                      objectFit: 'cover', 
-                      borderRadius: '12px', 
-                      marginTop: '8px', 
-                      border: '1px solid #eee',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }} 
-                  />
-                </div>
-              )}
+              <p><strong>💰 Total:</strong> ${pedido.precioTotal || 0} | <strong>💵 Pago:</strong> <span style={{ color: getColorPago(pedido.estadoPago) }}>{pedido.estadoPago}</span></p>
+              {pedido.notas && <div className="notas-caja"><strong>📝 Notas:</strong> <p>{pedido.notas}</p></div>}
+              {pedido.fotoUrl && <img src={pedido.fotoUrl} alt="Pastel" style={{ width: '100%', borderRadius: '12px', marginTop: '10px' }} />}
             </div>
             
-            {!verHistorial ? (
-              <div className="pie-pedido">
+            <div className="pie-pedido" style={{ display: 'flex', gap: '10px' }}>
+              {/* 👇 BOTÓN EDITAR */}
+              <button 
+                className="btn-secundario" 
+                onClick={() => setPedidoParaEditar(pedido)}
+              >
+                ✏️ Editar
+              </button>
+
+              {!verHistorial && (
                 <button 
                   className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} 
                   onClick={() => marcarComoEntregado(pedido.id)}
                 >
-                  {confirmandoId === pedido.id ? '⚠️ Toca de nuevo para confirmar' : '✅ Marcar Entregado'}
+                  {confirmandoId === pedido.id ? '⚠️ Confirma' : '✅ Entregado'}
                 </button>
-              </div>
-            ) : (
-              <div className="pie-historial">🎉 Pedido Finalizado con Éxito</div>
-            )}
-
+              )}
+            </div>
           </div>
         ))}
-        
-        {pedidosAMostrar.length === 0 && (
-          <p className="mensaje-vacio">
-            {verHistorial ? "No hay pedidos entregados todavía." : "No tienes pedidos pendientes. ¡A descansar! 🍰"}
-          </p>
-        )}
       </div>
+
+      {/* 🖼️ MODAL DE EDICIÓN (Solo aparece si picas Editar) */}
+      {pedidoParaEditar && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>✏️ Editar Pedido</h3>
+            <form onSubmit={guardarCambios}>
+              <div className="campo">
+                <label>Cliente</label>
+                <input type="text" value={pedidoParaEditar.cliente} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, cliente: e.target.value})} required />
+              </div>
+              <div className="campo">
+                <label>Sabor</label>
+                <input type="text" value={pedidoParaEditar.sabor} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, sabor: e.target.value})} required />
+              </div>
+              <div className="finanzas-inputs">
+                <div className="campo">
+                  <label>Precio</label>
+                  <input type="number" value={pedidoParaEditar.precioTotal} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, precioTotal: e.target.value})} required />
+                </div>
+                <div className="campo">
+                  <label>Anticipo</label>
+                  <input type="number" value={pedidoParaEditar.cantidadAnticipo} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, cantidadAnticipo: e.target.value})} />
+                </div>
+              </div>
+              <div className="campo">
+                <label>Notas</label>
+                <textarea value={pedidoParaEditar.notas} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, notas: e.target.value})}></textarea>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                <button type="button" className="btn-cancelar" onClick={() => setPedidoParaEditar(null)}>Cancelar</button>
+                <button type="submit" className="btn-guardar" style={{ margin: 0, flex: 1 }}>Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

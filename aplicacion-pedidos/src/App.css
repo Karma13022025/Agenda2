@@ -221,3 +221,51 @@ body {
   color: white !important;
   border-color: #ff9800 !important;
 }
+
+/* --- ESTILOS DEL MODAL DE EDICIÓN --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6); /* Fondo oscuro transparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 15px;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto; /* Permite scroll si el celular es chico */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.btn-secundario {
+  flex: 0.5;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #666;
+  cursor: pointer;
+}
+
+.btn-cancelar {
+  flex: 1;
+  background: #eee;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+}
