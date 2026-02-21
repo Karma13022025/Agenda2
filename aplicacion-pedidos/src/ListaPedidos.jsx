@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore"; // 👈 Añadimos deleteDoc
 import { db } from './services/firebase';
 
 export default function ListaPedidos() {
@@ -7,8 +7,6 @@ export default function ListaPedidos() {
   const [verHistorial, setVerHistorial] = useState(false); 
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
-  
-  // 👇 NUEVO: Estado para el buscador
   const [busqueda, setBusqueda] = useState("");
 
   useEffect(() => {
@@ -23,7 +21,7 @@ export default function ListaPedidos() {
     return () => unsubscribe();
   }, []);
 
-  // --- 📊 CÁLCULOS FINANCIEROS ---
+  // --- 📊 CÁLCULOS ---
   const totalHistorial = todosLosPedidos
     .filter(p => p.estadoPedido === "Entregado")
     .reduce((sum, p) => sum + (Number(p.precioTotal) || 0), 0);
@@ -32,13 +30,25 @@ export default function ListaPedidos() {
     .filter(p => p.estadoPedido !== "Entregado")
     .reduce((sum, p) => sum + (Number(p.cantidadAnticipo) || 0), 0);
 
-  // --- 🔍 LÓGICA DE FILTRADO ---
-  // Filtramos primero por Historial/Pendiente y LUEGO por lo que escribas en el buscador
+  // --- 🔍 FILTRADO ---
   const pedidosFiltrados = todosLosPedidos.filter(pedido => {
     const coincideEstado = verHistorial ? pedido.estadoPedido === "Entregado" : pedido.estadoPedido !== "Entregado";
     const coincideNombre = pedido.cliente.toLowerCase().includes(busqueda.toLowerCase());
     return coincideEstado && coincideNombre;
   });
+
+  // --- 🗑️ LÓGICA PARA BORRAR ---
+  const borrarPedido = async (id) => {
+    const confirmar = window.confirm("¿Estás segura de que quieres borrar este pedido permanentemente? Esta acción no se puede deshacer.");
+    if (confirmar) {
+      try {
+        await deleteDoc(doc(db, "pedidos", id));
+        alert("🗑️ Pedido eliminado correctamente.");
+      } catch (error) {
+        alert("❌ Error al eliminar el pedido.");
+      }
+    }
+  };
 
   const marcarComoEntregado = async (id) => {
     if (confirmandoId !== id) {
@@ -83,24 +93,21 @@ export default function ListaPedidos() {
 
   return (
     <div className="lista-moderna">
-      {/* 💰 FINANZAS */}
       <div className="finanzas-grid">
         <div className="card-finanzas historial"><span>Cobrado</span><h3>${totalHistorial.toLocaleString()}</h3></div>
         <div className="card-finanzas anticipos"><span>Anticipos</span><h3>${totalAnticiposPendientes.toLocaleString()}</h3></div>
       </div>
 
-      {/* 🔎 NUEVO: BARRA DE BÚSQUEDA */}
       <div className="buscador-container" style={{ marginBottom: '15px' }}>
         <input 
           type="text" 
-          placeholder="🔍 Buscar cliente por nombre..." 
+          placeholder="🔍 Buscar cliente..." 
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           className="input-buscador"
         />
       </div>
 
-      {/* 📑 TABS */}
       <div className="tabs-container">
         <button className={`tab-btn ${!verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(false)}>📦 Pendientes</button>
         <button className={`tab-btn ${verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(true)}>📚 Historial</button>
@@ -111,14 +118,18 @@ export default function ListaPedidos() {
           <div key={pedido.id} className={`tarjeta-pedido-moderna ${verHistorial ? 'tarjeta-historial' : ''}`}>
             <div className="cabecera-pedido">
               <h3>{pedido.cliente}</h3>
-              <span className="fecha-badge">📅 {pedido.fechaEntrega}</span>
+              {/* 🗑️ BOTÓN DE BORRAR EN LA ESQUINA */}
+              <button className="btn-borrar-icono" onClick={() => borrarPedido(pedido.id)}>🗑️</button>
             </div>
+            
             <div className="cuerpo-pedido">
-              <p><strong>🎂 Pastel:</strong> {pedido.sabor || pedido.pastel}</p>
+              <span className="fecha-badge">📅 {pedido.fechaEntrega}</span>
+              <p style={{marginTop: '10px'}}><strong>🎂 Pastel:</strong> {pedido.sabor}</p>
               <p><strong>💰 Total:</strong> ${pedido.precioTotal || 0} | <strong>💵 Pago:</strong> <span style={{ color: getColorPago(pedido.estadoPago) }}>{pedido.estadoPago}</span></p>
               {pedido.fotoUrl && <img src={pedido.fotoUrl} alt="Pastel" style={{ width: '100%', borderRadius: '12px', marginTop: '10px' }} />}
             </div>
-            <div className="pie-pedido" style={{ display: 'flex', gap: '10px' }}>
+            
+            <div className="pie-pedido" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
               <button className="btn-secundario" onClick={() => setPedidoParaEditar(pedido)}>✏️ Editar</button>
               {!verHistorial && (
                 <button 
@@ -131,10 +142,10 @@ export default function ListaPedidos() {
             </div>
           </div>
         ))}
-        {pedidosFiltrados.length === 0 && <p className="mensaje-vacio">No se encontraron pedidos con ese nombre.</p>}
+        {pedidosFiltrados.length === 0 && <p className="mensaje-vacio">No hay resultados.</p>}
       </div>
 
-      {/* 🖼️ MODAL DE EDICIÓN (Mismo código anterior) */}
+      {/* MODAL DE EDICIÓN */}
       {pedidoParaEditar && (
         <div className="modal-overlay">
           <div className="modal-content">
