@@ -16,33 +16,59 @@ export default function FormularioPedido() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🛡️ VALIDACIONES DE SEGURIDAD 🛡️
+    const precio = Number(precioTotal);
+    const anticipo = Number(cantidadAnticipo) || 0;
+
+    // 1. Si puso cantidad en anticipo pero dejó el estado como "Pendiente"
+    if (anticipo > 0 && estadoPago === 'Pendiente') {
+      alert("⚠️ Error: Si hay una cantidad de anticipo, el estado no puede ser 'Sin anticipo'. Cámbialo a 'Anticipo entregado'.");
+      return; // Detiene la ejecución
+    }
+
+    // 2. Si puso "Anticipo entregado" pero la cantidad es 0 o está vacía
+    if (estadoPago === 'Anticipo' && anticipo <= 0) {
+      alert("⚠️ Error: Marcaste 'Anticipo entregado', por favor escribe la cantidad del anticipo.");
+      return;
+    }
+
+    // 3. Validación extra: Que el anticipo no sea mayor al total
+    if (anticipo > precio) {
+      alert("⚠️ Error: El anticipo no puede ser mayor al precio total del pastel.");
+      return;
+    }
+
+    // 4. Si marcó "Liquidado", el anticipo debería ser igual al total (opcional, pero recomendado)
+    if (estadoPago === 'Liquidado' && anticipo < precio) {
+      const confirmar = window.confirm(`¿Segura que está liquidado? El total es $${precio} y solo anotaste $${anticipo} de pago. ¿Deseas continuar?`);
+      if (!confirmar) return;
+    }
+
     setCargando(true);
 
     try {
       let fotoUrl = "";
-
-      // Si el usuario seleccionó una imagen, la subimos a Firebase Storage
       if (imagen) {
         const storageRef = ref(storage, `disenos/${Date.now()}-${imagen.name}`);
         await uploadBytes(storageRef, imagen);
         fotoUrl = await getDownloadURL(storageRef);
       }
 
-      // Guardamos el pedido en Firestore
       await addDoc(collection(db, "pedidos"), {
         cliente,
         sabor,
         fechaEntrega,
-        precioTotal: Number(precioTotal), // Convertimos a número para las finanzas
-        cantidadAnticipo: Number(cantidadAnticipo) || 0,
+        precioTotal: precio,
+        cantidadAnticipo: anticipo,
         estadoPago,
         notas,
         fotoUrl,
-        estadoPedido: "Pendiente", // Todos los pedidos nacen como pendientes
+        estadoPedido: "Pendiente",
         fechaCreacion: new Date().toISOString()
       });
 
-      // Limpiamos el formulario después de guardar
+      // Limpiar campos
       setCliente('');
       setSabor('');
       setFechaEntrega('');
@@ -52,10 +78,10 @@ export default function FormularioPedido() {
       setNotas('');
       setImagen(null);
       
-      alert("✅ ¡Pedido agendado con éxito!");
+      alert("✅ ¡Pedido agendado perfectamente!");
     } catch (error) {
       console.error("Error al guardar:", error);
-      alert("❌ Hubo un error al guardar el pedido.");
+      alert("❌ Hubo un error al guardar.");
     } finally {
       setCargando(false);
     }
@@ -67,56 +93,27 @@ export default function FormularioPedido() {
 
       <div className="campo">
         <label>Nombre del Cliente *</label>
-        <input 
-          type="text" 
-          value={cliente} 
-          onChange={(e) => setCliente(e.target.value)} 
-          required 
-          placeholder="Ej: Ximena Zapata"
-        />
+        <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required />
       </div>
 
       <div className="campo">
         <label>Sabor / Tipo de Pastel *</label>
-        <input 
-          type="text" 
-          value={sabor} 
-          onChange={(e) => setSabor(e.target.value)} 
-          required 
-          placeholder="Ej: Chocolate con fresas"
-        />
+        <input type="text" value={sabor} onChange={(e) => setSabor(e.target.value)} required />
       </div>
 
       <div className="campo">
         <label>Fecha de Entrega *</label>
-        <input 
-          type="date" 
-          value={fechaEntrega} 
-          onChange={(e) => setFechaEntrega(e.target.value)} 
-          required 
-        />
+        <input type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} required />
       </div>
 
-      {/* --- NUEVOS CAMPOS DE DINERO --- */}
       <div className="finanzas-inputs" style={{ display: 'flex', gap: '10px' }}>
         <div className="campo" style={{ flex: 1 }}>
           <label>💰 Precio Total *</label>
-          <input 
-            type="number" 
-            value={precioTotal} 
-            onChange={(e) => setPrecioTotal(e.target.value)} 
-            required 
-            placeholder="0.00"
-          />
+          <input type="number" value={precioTotal} onChange={(e) => setPrecioTotal(e.target.value)} required placeholder="0.00" />
         </div>
         <div className="campo" style={{ flex: 1 }}>
           <label>💵 Anticipo</label>
-          <input 
-            type="number" 
-            value={cantidadAnticipo} 
-            onChange={(e) => setCantidadAnticipo(e.target.value)} 
-            placeholder="0.00"
-          />
+          <input type="number" value={cantidadAnticipo} onChange={(e) => setCantidadAnticipo(e.target.value)} placeholder="0.00" />
         </div>
       </div>
 
@@ -130,21 +127,13 @@ export default function FormularioPedido() {
       </div>
 
       <div className="campo">
-        <label>Foto del Diseño (Opcional)</label>
-        <input 
-          type="file" 
-          accept="image/*" 
-          onChange={(e) => setImagen(e.target.files[0])} 
-        />
+        <label>Foto (Opcional)</label>
+        <input type="file" accept="image/*" onChange={(e) => setImagen(e.target.files[0])} />
       </div>
 
       <div className="campo">
-        <label>Notas o Detalles Adicionales</label>
-        <textarea 
-          value={notas} 
-          onChange={(e) => setNotas(e.target.value)} 
-          placeholder="Ej: Sin nueces, escribir 'Feliz Cumpleaños'..."
-        ></textarea>
+        <label>Notas</label>
+        <textarea value={notas} onChange={(e) => setNotas(e.target.value)}></textarea>
       </div>
 
       <button type="submit" className="btn-guardar" disabled={cargando}>
