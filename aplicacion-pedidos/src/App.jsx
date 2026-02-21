@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './services/firebase';
-import FormularioPedido from './components/FormularioPedido';
-import ListaPedidos from './components/ListaPedidos';
-import Login from './components/Login';
+import FormularioPedido from '.FormularioPedido';
+import ListaPedidos from '.ListaPedidos';
+import Login from './Login';
 import './App.css';
 
 function App() {
