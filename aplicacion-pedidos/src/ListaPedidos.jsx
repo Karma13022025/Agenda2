@@ -2,36 +2,31 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from './services/firebase';
 
-export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda}) {
-  const [verHistorial, setVerHistorial] = useState(false); 
+export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda }) {
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
   const [pedidoABorrar, setPedidoABorrar] = useState(null);
   const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
-
-  // 👇 NUEVO: Estado para ver la foto en grande
   const [fotoZoom, setFotoZoom] = useState(null);
+  const [verHistorial, setVerHistorial] = useState(false);
 
   const mostrarAviso = (texto, tipo = "exito") => {
     setNotificacion({ texto, tipo });
     setTimeout(() => setNotificacion({ texto: "", tipo: "" }), 3000);
   };
 
-  // --- 📊 CÁLCULOS ---
-  const totalHistorial = pedidosExistentes
-    .filter(p => p.estadoPedido === "Entregado")
-    .reduce((sum, p) => sum + (Number(p.precioTotal) || 0), 0);
-
-  const totalAnticiposPendientes = pedidosExistentes
-    .filter(p => p.estadoPedido !== "Entregado")
-    .reduce((sum, p) => sum + (Number(p.cantidadAnticipo) || 0), 0);
-
-  // --- 🔍 FILTRADO ---
-  const pedidosFiltrados = pedidosExistentes.filter(pedido => {
-    const coincideEstado = verHistorial ? pedido.estadoPedido === "Entregado" : pedido.estadoPedido !== "Entregado";
-    const coincideNombre = pedido.cliente.toLowerCase().includes(busqueda.toLowerCase());
-    return coincideEstado && coincideNombre;
-  });
+  // --- 🔄 NUEVA FUNCIÓN: REGRESAR A PENDIENTE ---
+  const regresarAPendiente = async (id) => {
+    try {
+      const pedidoRef = doc(db, "pedidos", id);
+      await updateDoc(pedidoRef, {
+        estadoPedido: "Pendiente"
+      });
+      mostrarAviso("⏪ Pedido movido a pendientes");
+    } catch (error) {
+      mostrarAviso("❌ Error al mover el pedido", "error");
+    }
+  };
 
   const ejecutarBorrado = async () => {
     try {
@@ -48,10 +43,13 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
       return;
     }
     try {
-      await updateDoc(doc(db, "pedidos", id), { estadoPedido: "Entregado" });
+      const pedidoRef = doc(db, "pedidos", id);
+      await updateDoc(pedidoRef, { estadoPedido: "Entregado" });
       setConfirmandoId(null);
-      mostrarAviso("✅ ¡Entregado!");
-    } catch (e) { mostrarAviso("❌ Error", "error"); }
+      mostrarAviso("✅ ¡Pedido entregado!");
+    } catch (error) {
+      mostrarAviso("❌ Error al actualizar", "error");
+    }
   };
 
   const guardarCambios = async (e) => {
@@ -69,7 +67,9 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
       });
       setPedidoParaEditar(null);
       mostrarAviso("✅ Cambios guardados");
-    } catch (e) { mostrarAviso("❌ Error", "error"); }
+    } catch (error) {
+      mostrarAviso("❌ Error al guardar", "error");
+    }
   };
 
   const getColorPago = (estado) => {
@@ -77,6 +77,21 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
     if (estado === 'Anticipo') return '#ff9800';
     return '#f44336';
   };
+
+  // --- 📊 CÁLCULOS ---
+  const totalHistorial = pedidosExistentes
+    .filter(p => p.estadoPedido === "Entregado")
+    .reduce((sum, p) => sum + (Number(p.precioTotal) || 0), 0);
+
+  const totalAnticiposPendientes = pedidosExistentes
+    .filter(p => p.estadoPedido !== "Entregado")
+    .reduce((sum, p) => sum + (Number(p.cantidadAnticipo) || 0), 0);
+
+  const pedidosFiltrados = pedidosExistentes.filter(pedido => {
+    const coincideEstado = verHistorial ? pedido.estadoPedido === "Entregado" : pedido.estadoPedido !== "Entregado";
+    const coincideNombre = pedido.cliente.toLowerCase().includes(busqueda.toLowerCase());
+    return coincideEstado && coincideNombre;
+  });
 
   return (
     <div className="lista-moderna">
@@ -109,25 +124,36 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
               <p style={{marginTop: '10px'}}><strong>🎂 Pastel:</strong> {pedido.sabor}</p>
               <p><strong>💰 Total:</strong> ${pedido.precioTotal || 0} | <strong>💵 Pago:</strong> <span style={{ color: getColorPago(pedido.estadoPago) }}>{pedido.estadoPago}</span></p>
               
-              {/* 📸 FOTO CLICKABLE */}
               {pedido.fotoUrl && (
                 <div style={{ position: 'relative' }}>
                   <img 
                     src={pedido.fotoUrl} 
                     alt="Pastel" 
-                    onClick={() => setFotoZoom(pedido.fotoUrl)} // 👈 Al tocarla se guarda en fotoZoom
+                    onClick={() => setFotoZoom(pedido.fotoUrl)}
                     style={{ width: '100%', borderRadius: '12px', marginTop: '10px', cursor: 'zoom-in', display: 'block' }} 
                   />
-                  <span style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem' }}>🔍 Toca para ampliar</span>
                 </div>
               )}
             </div>
             
             <div className="pie-pedido" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
               <button className="btn-secundario" onClick={() => setPedidoParaEditar(pedido)}>✏️ Editar</button>
-              {!verHistorial && (
-                <button className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} onClick={() => marcarComoEntregado(pedido.id)}>
+              
+              {!verHistorial ? (
+                <button 
+                  className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} 
+                  onClick={() => marcarComoEntregado(pedido.id)}
+                >
                   {confirmandoId === pedido.id ? '⚠️ Confirma' : '✅ Entregado'}
+                </button>
+              ) : (
+                /* 👇 BOTÓN PARA REGRESAR EL PEDIDO A PENDIENTES */
+                <button 
+                  className="btn-secundario" 
+                  onClick={() => regresarAPendiente(pedido.id)}
+                  style={{ border: '1px solid #ff69b4', color: '#d81b60' }}
+                >
+                  ⏪ Deshacer
                 </button>
               )}
             </div>
@@ -135,26 +161,17 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
         ))}
       </div>
 
-      {/* 🔍 VISOR DE FOTO EN GRANDE */}
+      {/* MODALES (Zoom, Borrar, Editar) - Se mantienen igual */}
+      {/* ... (código de modales de la versión anterior) */}
       {fotoZoom && (
         <div className="modal-overlay" onClick={() => setFotoZoom(null)} style={{ background: 'rgba(0,0,0,0.9)', zIndex: 3000 }}>
           <div style={{ position: 'relative', width: '95%', maxWidth: '800px', display: 'flex', justifyContent: 'center' }}>
-             <img 
-              src={fotoZoom} 
-              alt="Zoom" 
-              style={{ width: '100%', borderRadius: '8px', maxHeight: '85vh', objectFit: 'contain' }} 
-            />
-            <button 
-              onClick={() => setFotoZoom(null)}
-              style={{ position: 'absolute', top: '-40px', right: '0', background: 'white', border: 'none', padding: '8px 15px', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              CERRAR ×
-            </button>
+             <img src={fotoZoom} alt="Zoom" style={{ width: '100%', borderRadius: '8px', maxHeight: '85vh', objectFit: 'contain' }} />
+             <button onClick={() => setFotoZoom(null)} style={{ position: 'absolute', top: '-40px', right: '0', background: 'white', border: 'none', padding: '8px 15px', borderRadius: '50px', fontWeight: 'bold' }}>CERRAR ×</button>
           </div>
         </div>
       )}
 
-      {/* MODAL BORRAR (Igual que antes) */}
       {pedidoABorrar && (
         <div className="modal-overlay">
           <div className="modal-content" style={{textAlign: 'center'}}>
@@ -168,7 +185,6 @@ export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda
         </div>
       )}
 
-      {/* MODAL EDITAR (Igual que antes) */}
       {pedidoParaEditar && (
         <div className="modal-overlay">
           <div className="modal-content">
