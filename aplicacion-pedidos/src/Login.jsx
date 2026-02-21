@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { signInWithPopup } from 'firebase/auth';
-import { auth, provider } from '../services/firebase';
+import { auth, provider } from './services/firebase';
 
 export default function Login() {
   const [error, setError] = useState('');
