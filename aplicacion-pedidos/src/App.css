@@ -268,3 +268,36 @@ body {
   color: white !important;
   border-color: #ff9800 !important;
 }
+
+/* --- PANEL DE FINANZAS --- */
+.finanzas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.card-finanzas {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-bottom: 4px solid #ddd;
+}
+
+.card-finanzas span {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.card-finanzas h3 {
+  margin: 5px 0 0 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.card-finanzas.historial { border-bottom-color: #4caf50; } /* Verde para lo ya ganado */
+.card-finanzas.anticipos { border-bottom-color: #ff9800; } /* Naranja para los anticipos */
