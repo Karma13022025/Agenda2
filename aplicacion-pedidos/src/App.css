@@ -269,3 +269,20 @@ body {
   color: #333;
   cursor: pointer;
 }
+
+.input-buscador {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #fce4ec;
+  border-radius: 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.input-buscador:focus {
+  border-color: #ff69b4;
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.1);
+}
