@@ -344,3 +344,85 @@ body {
   font-weight: bold;
   flex: 1;
 }
+
+/* --- ESTILOS DEL LOGIN PREMIUM --- */
+.login-pantalla {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh; /* Centra la tarjeta verticalmente */
+  padding: 20px;
+}
+
+.login-tarjeta {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 24px;
+  box-shadow: 0 15px 35px rgba(216, 27, 96, 0.08); /* Sombra rosada elegante */
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  border-top: 8px solid #ff69b4;
+  transition: transform 0.3s ease;
+}
+
+.login-tarjeta:hover {
+  transform: translateY(-5px); /* Se levanta un poquito al pasar el mouse */
+}
+
+.login-icono {
+  font-size: 4rem;
+  margin-bottom: 10px;
+  animation: flotar 3s ease-in-out infinite; /* 👈 Animación del pastelito */
+}
+
+.login-tarjeta h2 {
+  color: #d81b60;
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+}
+
+.login-tarjeta p {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* El nuevo botón de Google */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  background: white;
+  border: 2px solid #eee;
+  color: #444;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.btn-google img {
+  width: 24px;
+  height: 24px;
+}
+
+.btn-google:hover {
+  background: #fcfcfc;
+  border-color: #ddd;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+/* Animación de flotar para el icono */
+@keyframes flotar {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
