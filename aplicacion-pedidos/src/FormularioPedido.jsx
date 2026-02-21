@@ -96,7 +96,7 @@ export default function FormularioPedido() {
         </div>
       )}
 
-      <h2>📝 Agendar Nuevo Pedido</h2>
+      <h2>📝 Agendar nuevo pedido </h2>
 
       <div className="campo">
         <label>Nombre del Cliente *</label>

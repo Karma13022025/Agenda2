@@ -46,7 +46,7 @@ function App() {
     return (
       <div className="contenedor-principal">
         <div className="header">
-          <h1>Administración de Pastelería</h1>
+          <h1>Amena´s</h1>
         </div>
         <Login />
       </div>
@@ -57,7 +57,7 @@ function App() {
   return (
     <div className="contenedor-principal">
       <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Administración de Pastelería</h1>
+        <h1> Amena´s </h1>
         <button 
           onClick={cerrarSesion} 
           style={{ background: 'transparent', border: '2px solid #d81b60', color: '#d81b60', padding: '8px 15px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
