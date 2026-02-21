@@ -445,3 +445,50 @@ body {
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
+
+/* --- ESTADOS VACÍOS (EMPTY STATES) --- */
+.estado-vacio {
+  grid-column: 1 / -1; /* Para que ocupe todo el ancho de la pantalla */
+  text-align: center;
+  padding: 50px 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(216, 27, 96, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.icono-vacio {
+  font-size: 3.5rem;
+  background: #fdf2f8; /* Un circulito rosa pastel de fondo */
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  animation: respirar 3s infinite ease-in-out;
+}
+
+.estado-vacio h3 {
+  color: #d81b60;
+  margin: 0 0 10px 0;
+  font-size: 1.4rem;
+}
+
+.estado-vacio p {
+  color: #888;
+  margin: 0;
+  font-size: 0.95rem;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+@keyframes respirar {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}

@@ -110,7 +110,7 @@ export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda 
         <button className={`tab-btn ${!verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(false)}>📦 Pendientes</button>
         <button className={`tab-btn ${verHistorial ? 'activa' : ''}`} onClick={() => setVerHistorial(true)}>📚 Historial</button>
       </div>
-      
+
       <div className="grid-pedidos">
         {pedidosFiltrados.map(pedido => (
           <div key={pedido.id} className={`tarjeta-pedido-moderna ${verHistorial ? 'tarjeta-historial' : ''}`}>
@@ -118,38 +118,38 @@ export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda 
               <h3>{pedido.cliente}</h3>
               <button className="btn-borrar-icono" onClick={() => setPedidoABorrar(pedido)}>🗑️</button>
             </div>
-            
+
             <div className="cuerpo-pedido">
               <span className="fecha-badge">📅 {pedido.fechaEntrega}</span>
-              <p style={{marginTop: '10px'}}><strong>🎂 Pastel:</strong> {pedido.sabor}</p>
+              <p style={{ marginTop: '10px' }}><strong>🎂 Pastel:</strong> {pedido.sabor}</p>
               <p><strong>💰 Total:</strong> ${pedido.precioTotal || 0} | <strong>💵 Pago:</strong> <span style={{ color: getColorPago(pedido.estadoPago) }}>{pedido.estadoPago}</span></p>
-              
+
               {pedido.fotoUrl && (
                 <div style={{ position: 'relative' }}>
-                  <img 
-                    src={pedido.fotoUrl} 
-                    alt="Pastel" 
+                  <img
+                    src={pedido.fotoUrl}
+                    alt="Pastel"
                     onClick={() => setFotoZoom(pedido.fotoUrl)}
-                    style={{ width: '100%', borderRadius: '12px', marginTop: '10px', cursor: 'zoom-in', display: 'block' }} 
+                    style={{ width: '100%', borderRadius: '12px', marginTop: '10px', cursor: 'zoom-in', display: 'block' }}
                   />
                 </div>
               )}
             </div>
-            
+
             <div className="pie-pedido" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
               <button className="btn-secundario" onClick={() => setPedidoParaEditar(pedido)}>✏️ Editar</button>
-              
+
               {!verHistorial ? (
-                <button 
-                  className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`} 
+                <button
+                  className={`btn-completar ${confirmandoId === pedido.id ? 'btn-confirmar' : ''}`}
                   onClick={() => marcarComoEntregado(pedido.id)}
                 >
                   {confirmandoId === pedido.id ? '⚠️ Confirma' : '✅ Entregado'}
                 </button>
               ) : (
                 /* 👇 BOTÓN PARA REGRESAR EL PEDIDO A PENDIENTES */
-                <button 
-                  className="btn-secundario" 
+                <button
+                  className="btn-secundario"
                   onClick={() => regresarAPendiente(pedido.id)}
                   style={{ border: '1px solid #ff69b4', color: '#d81b60' }}
                 >
@@ -159,6 +159,21 @@ export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda 
             </div>
           </div>
         ))}
+
+        {/* 👇 AQUÍ ESTÁ LA MODIFICACIÓN: EL ESTADO VACÍO */}
+        {pedidosFiltrados.length === 0 && (
+          <div className="estado-vacio">
+            <div className="icono-vacio">
+              {!verHistorial ? "✨" : "📦"}
+            </div>
+            <h3>{!verHistorial ? "¡Día libre!" : "Aún no hay entregas"}</h3>
+            <p>
+              {!verHistorial
+                ? "No tienes pedidos pendientes o que coincidan con tu búsqueda. ¡Tómate un respiro o agenda uno nuevo!"
+                : "Aquí aparecerán guardados todos los pasteles que vayas entregando a tus clientes."}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* MODALES (Zoom, Borrar, Editar) - Se mantienen igual */}
@@ -166,18 +181,18 @@ export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda 
       {fotoZoom && (
         <div className="modal-overlay" onClick={() => setFotoZoom(null)} style={{ background: 'rgba(0,0,0,0.9)', zIndex: 3000 }}>
           <div style={{ position: 'relative', width: '95%', maxWidth: '800px', display: 'flex', justifyContent: 'center' }}>
-             <img src={fotoZoom} alt="Zoom" style={{ width: '100%', borderRadius: '8px', maxHeight: '85vh', objectFit: 'contain' }} />
-             <button onClick={() => setFotoZoom(null)} style={{ position: 'absolute', top: '-40px', right: '0', background: 'white', border: 'none', padding: '8px 15px', borderRadius: '50px', fontWeight: 'bold' }}>CERRAR ×</button>
+            <img src={fotoZoom} alt="Zoom" style={{ width: '100%', borderRadius: '8px', maxHeight: '85vh', objectFit: 'contain' }} />
+            <button onClick={() => setFotoZoom(null)} style={{ position: 'absolute', top: '-40px', right: '0', background: 'white', border: 'none', padding: '8px 15px', borderRadius: '50px', fontWeight: 'bold' }}>CERRAR ×</button>
           </div>
         </div>
       )}
 
       {pedidoABorrar && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{textAlign: 'center'}}>
-            <h3 style={{color: '#d81b60'}}>¿Borrar pedido?</h3>
+          <div className="modal-content" style={{ textAlign: 'center' }}>
+            <h3 style={{ color: '#d81b60' }}>¿Borrar pedido?</h3>
             <p>Se eliminará permanentemente.</p>
-            <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button className="btn-cancelar" onClick={() => setPedidoABorrar(null)}>No, volver</button>
               <button className="btn-borrar-confirmar" onClick={ejecutarBorrado}>Sí, borrar</button>
             </div>
@@ -190,21 +205,21 @@ export default function ListaPedidos({ pedidosExistentes, busqueda, setBusqueda 
           <div className="modal-content">
             <h3>✏️ Editar Pedido</h3>
             <form onSubmit={guardarCambios}>
-              <div className="campo"><label>Cliente</label><input type="text" value={pedidoParaEditar.cliente} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, cliente: e.target.value})} required /></div>
-              <div className="campo"><label>Sabor</label><input type="text" value={pedidoParaEditar.sabor} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, sabor: e.target.value})} required /></div>
+              <div className="campo"><label>Cliente</label><input type="text" value={pedidoParaEditar.cliente} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, cliente: e.target.value })} required /></div>
+              <div className="campo"><label>Sabor</label><input type="text" value={pedidoParaEditar.sabor} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, sabor: e.target.value })} required /></div>
               <div className="finanzas-inputs">
-                <div className="campo"><label>Precio</label><input type="number" value={pedidoParaEditar.precioTotal} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, precioTotal: e.target.value})} /></div>
-                <div className="campo"><label>Anticipo</label><input type="number" value={pedidoParaEditar.cantidadAnticipo} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, cantidadAnticipo: e.target.value})} /></div>
+                <div className="campo"><label>Precio</label><input type="number" value={pedidoParaEditar.precioTotal} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, precioTotal: e.target.value })} /></div>
+                <div className="campo"><label>Anticipo</label><input type="number" value={pedidoParaEditar.cantidadAnticipo} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, cantidadAnticipo: e.target.value })} /></div>
               </div>
               <div className="campo">
                 <label>Estado del Pago</label>
-                <select value={pedidoParaEditar.estadoPago} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, estadoPago: e.target.value})}>
-                    <option value="Pendiente">Sin anticipo</option>
-                    <option value="Anticipo">Anticipo entregado</option>
-                    <option value="Liquidado">Totalmente Liquidado</option>
+                <select value={pedidoParaEditar.estadoPago} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, estadoPago: e.target.value })}>
+                  <option value="Pendiente">Sin anticipo</option>
+                  <option value="Anticipo">Anticipo entregado</option>
+                  <option value="Liquidado">Totalmente Liquidado</option>
                 </select>
               </div>
-              <div className="campo"><label>Notas</label><textarea value={pedidoParaEditar.notas} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, notas: e.target.value})}></textarea></div>
+              <div className="campo"><label>Notas</label><textarea value={pedidoParaEditar.notas} onChange={(e) => setPedidoParaEditar({ ...pedidoParaEditar, notas: e.target.value })}></textarea></div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                 <button type="button" className="btn-cancelar" onClick={() => setPedidoParaEditar(null)}>Cancelar</button>
                 <button type="submit" className="btn-guardar" style={{ margin: 0, flex: 1 }}>Guardar</button>
