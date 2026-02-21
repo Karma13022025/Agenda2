@@ -93,12 +93,12 @@ export default function FormularioPedido() {
 
       <div className="campo">
         <label>Nombre del Cliente *</label>
-        <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required />
+        <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required placeholder="Ej: Ximena Zapata"/>
       </div>
 
       <div className="campo">
         <label>Sabor / Tipo de Pastel *</label>
-        <input type="text" value={sabor} onChange={(e) => setSabor(e.target.value)} required />
+        <input type="text" value={sabor} onChange={(e) => setSabor(e.target.value)} required placeholder="Ej: Chocolate con fresas"/>
       </div>
 
       <div className="campo">
@@ -133,7 +133,7 @@ export default function FormularioPedido() {
 
       <div className="campo">
         <label>Notas</label>
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)}></textarea>
+        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej: Sin nueces, escribir 'Feliz Cumpleaños'..."></textarea>
       </div>
 
       <button type="submit" className="btn-guardar" disabled={cargando}>
