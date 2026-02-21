@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './services/firebase';
-import FormularioPedido from '.FormularioPedido';
-import ListaPedidos from '.ListaPedidos';
+import FormularioPedido from './FormularioPedido';
+import ListaPedidos from './ListaPedidos';
 import Login from './Login';
 import './App.css';
 
