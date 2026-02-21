@@ -1,33 +1,33 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from './services/firebase';
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { auth, db } from './services/firebase';
 import FormularioPedido from './FormularioPedido';
 import ListaPedidos from './ListaPedidos';
+import VistaCalendario from './VistaCalendario';
 import Login from './Login';
 import './App.css';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [pedidos, setPedidos] = useState([]);
+  const [vista, setVista] = useState('lista');
+  
+  // 🔍 EL BUSCADOR AHORA VIVE AQUÍ
+  const [busqueda, setBusqueda] = useState("");
 
-  // 👇 LA LISTA VIP: Agrega aquí los correos que pueden entrar
   const CORREOS_AUTORIZADOS = [
-    "balderashoracio93@gmail.com", 
-    "ximenazapatavega@gmail.com" // Puedes agregar más separándolos con comas
+    "balderashoracio93@gmail.com",
+    "ximenazapatavega@gmail.com" //
   ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Revisamos si el correo del usuario está en la lista VIP
-        if (CORREOS_AUTORIZADOS.includes(user.email)) {
-          setUsuario(user);
-        } else {
-          await signOut(auth); // Lo sacamos
-          setUsuario(null);
-          alert(`❌ Acceso denegado. El correo ${user.email} no está en la lista de personal autorizado.`);
-        }
+      if (user && CORREOS_AUTORIZADOS.includes(user.email)) {
+        setUsuario(user);
       } else {
+        if (user) await signOut(auth);
         setUsuario(null);
       }
       setCargando(false);
@@ -35,43 +35,52 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const cerrarSesion = async () => {
-    await signOut(auth);
-  };
+  useEffect(() => {
+    if (!usuario) return;
+    const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPedidos(data);
+    });
+    return () => unsubscribe();
+  }, [usuario]);
 
-  if (cargando) return <div style={{ textAlign: 'center', marginTop: '50px' }}>Cargando sistema...</div>;
+  const cerrarSesion = async () => { await signOut(auth); };
 
-  // Si no está autorizado, le mostramos la pantalla de Login
-  if (!usuario) {
-    return (
-      <div className="contenedor-principal">
-        <div className="header">
-          <h1>Amena´s</h1>
-        </div>
-        <Login />
-      </div>
-    );
-  }
+  if (cargando) return <div className="cargando">Cargando pastelería... 🍰</div>;
+  if (!usuario) return <div className="contenedor-principal"><Login /></div>;
 
-  // Si está autorizado, le mostramos la app completa
   return (
     <div className="contenedor-principal">
-      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1> Amena´s </h1>
-        <button 
-          onClick={cerrarSesion} 
-          style={{ background: 'transparent', border: '2px solid #d81b60', color: '#d81b60', padding: '8px 15px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          Salir 🚪
-        </button>
+      <div className="header">
+        <h1>Pastelería Ximena 🎂</h1>
+        <button onClick={cerrarSesion} className="btn-salir">Salir 🚪</button>
       </div>
       
       <div className="grid-layout">
         <div className="columna-izq">
           <FormularioPedido />
         </div>
+
         <div className="columna-der">
-          <ListaPedidos />
+          <div className="selector-vista" style={{marginBottom: '15px', display: 'flex', gap: '10px'}}>
+             <button className={`tab-btn ${vista === 'lista' ? 'activa' : ''}`} onClick={() => setVista('lista')}>📑 Lista</button>
+             <button className={`tab-btn ${vista === 'calendario' ? 'activa' : ''}`} onClick={() => setVista('calendario')}>📅 Calendario</button>
+          </div>
+
+          {vista === 'lista' ? (
+            <ListaPedidos 
+              pedidosExistentes={pedidos} 
+              busqueda={busqueda} 
+              setBusqueda={setBusqueda} 
+            /> 
+          ) : (
+            <VistaCalendario 
+              pedidos={pedidos} 
+              setVista={setVista} 
+              setBusqueda={setBusqueda} 
+            />
+          )}
         </div>
       </div>
     </div>

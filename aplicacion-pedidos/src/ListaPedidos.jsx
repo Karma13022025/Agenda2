@@ -2,29 +2,15 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from './services/firebase';
 
-export default function ListaPedidos() {
-  const [todosLosPedidos, setTodosLosPedidos] = useState([]);
+export default function ListaPedidos({ pedidosExistentes , busqueda, setBusqueda}) {
   const [verHistorial, setVerHistorial] = useState(false); 
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
   const [pedidoABorrar, setPedidoABorrar] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
   const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
 
   // 👇 NUEVO: Estado para ver la foto en grande
   const [fotoZoom, setFotoZoom] = useState(null);
-
-  useEffect(() => {
-    const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const pedidosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTodosLosPedidos(pedidosData);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const mostrarAviso = (texto, tipo = "exito") => {
     setNotificacion({ texto, tipo });
@@ -32,16 +18,16 @@ export default function ListaPedidos() {
   };
 
   // --- 📊 CÁLCULOS ---
-  const totalHistorial = todosLosPedidos
+  const totalHistorial = pedidosExistentes
     .filter(p => p.estadoPedido === "Entregado")
     .reduce((sum, p) => sum + (Number(p.precioTotal) || 0), 0);
 
-  const totalAnticiposPendientes = todosLosPedidos
+  const totalAnticiposPendientes = pedidosExistentes
     .filter(p => p.estadoPedido !== "Entregado")
     .reduce((sum, p) => sum + (Number(p.cantidadAnticipo) || 0), 0);
 
   // --- 🔍 FILTRADO ---
-  const pedidosFiltrados = todosLosPedidos.filter(pedido => {
+  const pedidosFiltrados = pedidosExistentes.filter(pedido => {
     const coincideEstado = verHistorial ? pedido.estadoPedido === "Entregado" : pedido.estadoPedido !== "Entregado";
     const coincideNombre = pedido.cliente.toLowerCase().includes(busqueda.toLowerCase());
     return coincideEstado && coincideNombre;
