@@ -27,39 +27,44 @@ export default function FormularioPedido() {
     const precio = Number(precioTotal);
     const anticipo = Number(cantidadAnticipo) || 0;
 
-    if (anticipo > 0 && estadoPago === 'Pendiente') {
-      return mostrarAviso("⚠️ Error: Cambia el estado a 'Anticipo entregado'.", "error");
-    }
-    if (estadoPago === 'Anticipo' && anticipo <= 0) {
-      return mostrarAviso("⚠️ Error: Escribe la cantidad del anticipo.", "error");
-    }
-    if (anticipo > precio) {
-      return mostrarAviso("⚠️ Error: El anticipo no puede ser mayor al total.", "error");
-    }
+    if (anticipo > 0 && estadoPago === 'Pendiente') return mostrarAviso("⚠️ Cambia el estado a 'Anticipo entregado'.", "error");
+    if (estadoPago === 'Anticipo' && anticipo <= 0) return mostrarAviso("⚠️ Escribe la cantidad del anticipo.", "error");
+    if (anticipo > precio) return mostrarAviso("⚠️ El anticipo no puede ser mayor al total.", "error");
 
     setGuardando(true);
 
     try {
       let fotoUrl = "";
 
+      // 📸 INTENTAMOS SUBIR A IMGBB SOLO SI HAY INTERNET
       if (foto) {
-        const formData = new FormData();
-        formData.append('image', foto);
+        if (navigator.onLine) {
+          try {
+            const formData = new FormData();
+            formData.append('image', foto);
 
-        const respuestaImgbb = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-          method: 'POST',
-          body: formData
-        });
+            const respuestaImgbb = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+              method: 'POST',
+              body: formData
+            });
 
-        const datosImagen = await respuestaImgbb.json();
-
-        if (datosImagen.success) {
-          fotoUrl = datosImagen.data.url;
+            const datosImagen = await respuestaImgbb.json();
+            if (datosImagen.success) {
+              fotoUrl = datosImagen.data.url;
+            } else {
+              mostrarAviso("Detalle con la foto, pero guardaremos el pedido.", "error");
+            }
+          } catch (errorImg) {
+            console.error("Fallo al subir foto:", errorImg);
+            mostrarAviso("Sin conexión para la foto, pero el pedido se guardará.", "error");
+          }
         } else {
-          mostrarAviso("Hubo un detalle con la foto, pero guardaremos el pedido.", "error");
+          // Si el celular sabe que no hay internet
+          mostrarAviso("Estás sin conexión 📶. Se guardará el texto, pero no la foto.", "error");
         }
       }
 
+      // 💾 GUARDADO EN FIRESTORE (Si no hay internet, Firebase lo pone "en pausa" localmente)
       await addDoc(collection(db, "pedidos"), {
         cliente,
         sabor,
@@ -68,20 +73,25 @@ export default function FormularioPedido() {
         cantidadAnticipo: anticipo,
         estadoPago,
         notas,
-        fotoUrl,
+        fotoUrl, // Estará vacío si se guardó offline
         estadoPedido: "Pendiente",
         creadoEn: new Date()
       });
 
-      mostrarAviso("✅ ¡Pedido guardado con éxito!", "exito");
+      if (navigator.onLine) {
+        mostrarAviso("✅ ¡Pedido guardado con éxito!", "exito");
+      } else {
+        mostrarAviso("⏳ ¡Pedido guardado offline! Se subirá al recuperar conexión.", "exito");
+      }
 
+      // Limpiar Formulario
       setCliente(''); setSabor(''); setFechaEntrega('');
       setPrecioTotal(''); setCantidadAnticipo('');
       setEstadoPago('Pendiente'); setNotas(''); setFoto(null);
       if (document.getElementById('input-foto')) document.getElementById('input-foto').value = '';
 
     } catch (error) {
-      mostrarAviso("❌ Error al guardar. Revisa tu conexión.", "error");
+      mostrarAviso("❌ Error grave al intentar guardar el pedido.", "error");
     } finally {
       setGuardando(false);
     }
