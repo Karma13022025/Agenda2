@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { collection, addDoc } from "firebase/firestore"; 
-import { db } from './services/firebase'; // Ya no necesitamos storage de firebase
+import { collection, addDoc } from "firebase/firestore";
+import { db } from './services/firebase';
 
 export default function FormularioPedido() {
   const [cliente, setCliente] = useState('');
@@ -12,25 +12,29 @@ export default function FormularioPedido() {
   const [notas, setNotas] = useState('');
   const [foto, setFoto] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
 
-  // 👇 PEGA TU LLAVE DE IMGBB AQUÍ ADENTRO 👇
   const IMGBB_API_KEY = "78867f44959776dba58685f514527d5b";
+
+  const mostrarAviso = (texto, tipo) => {
+    setMensaje({ texto, tipo });
+    setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🛡️ VALIDACIONES DE SEGURIDAD
     const precio = Number(precioTotal);
     const anticipo = Number(cantidadAnticipo) || 0;
 
     if (anticipo > 0 && estadoPago === 'Pendiente') {
-      return alert("⚠️ Error: Si hay anticipo, cambia el estado a 'Anticipo entregado'.");
+      return mostrarAviso("⚠️ Error: Cambia el estado a 'Anticipo entregado'.", "error");
     }
     if (estadoPago === 'Anticipo' && anticipo <= 0) {
-      return alert("⚠️ Error: Escribe la cantidad del anticipo.");
+      return mostrarAviso("⚠️ Error: Escribe la cantidad del anticipo.", "error");
     }
     if (anticipo > precio) {
-      return alert("⚠️ Error: El anticipo no puede ser mayor al precio total.");
+      return mostrarAviso("⚠️ Error: El anticipo no puede ser mayor al total.", "error");
     }
 
     setGuardando(true);
@@ -38,7 +42,6 @@ export default function FormularioPedido() {
     try {
       let fotoUrl = "";
 
-      // 📸 SUBIDA A IMGBB
       if (foto) {
         const formData = new FormData();
         formData.append('image', foto);
@@ -49,16 +52,14 @@ export default function FormularioPedido() {
         });
 
         const datosImagen = await respuestaImgbb.json();
-        
+
         if (datosImagen.success) {
           fotoUrl = datosImagen.data.url;
         } else {
-          console.error("Detalle ImgBB:", datosImagen);
-          alert("Hubo un detalle con la foto, pero intentaremos guardar el pedido.");
+          mostrarAviso("Hubo un detalle con la foto, pero guardaremos el pedido.", "error");
         }
       }
 
-      // 💾 GUARDADO EN FIRESTORE
       await addDoc(collection(db, "pedidos"), {
         cliente,
         sabor,
@@ -71,18 +72,16 @@ export default function FormularioPedido() {
         estadoPedido: "Pendiente",
         creadoEn: new Date()
       });
-      
-      alert("✅ ¡Pedido guardado con éxito!");
-      
-      // Limpiar Formulario
+
+      mostrarAviso("✅ ¡Pedido guardado con éxito!", "exito");
+
       setCliente(''); setSabor(''); setFechaEntrega('');
       setPrecioTotal(''); setCantidadAnticipo('');
       setEstadoPago('Pendiente'); setNotas(''); setFoto(null);
       if (document.getElementById('input-foto')) document.getElementById('input-foto').value = '';
-      
+
     } catch (error) {
-      alert("❌ Error al guardar. Revisa tu conexión.");
-      console.error(error);
+      mostrarAviso("❌ Error al guardar. Revisa tu conexión.", "error");
     } finally {
       setGuardando(false);
     }
@@ -90,16 +89,23 @@ export default function FormularioPedido() {
 
   return (
     <form onSubmit={handleSubmit} className="formulario-moderno">
+      {/* 👇 EL AVISO AHORA ESTÁ AQUÍ ADENTRO, DONDE SÍ SE PUEDE VER */}
+      {mensaje.texto && (
+        <div className={`notificacion-flotante notificacion-${mensaje.tipo}`}>
+          {mensaje.texto}
+        </div>
+      )}
+
       <h2>📝 Agendar Nuevo Pedido</h2>
-      
+
       <div className="campo">
         <label>Nombre del Cliente *</label>
-        <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required placeholder="Ej: Ximena Zapata"/>
+        <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required placeholder="Ej: Ximena Zapata" />
       </div>
 
       <div className="campo">
         <label>Sabor / Tipo de Pastel *</label>
-        <input type="text" value={sabor} onChange={(e) => setSabor(e.target.value)} required placeholder="Ej: Chocolate con fresas"/>
+        <input type="text" value={sabor} onChange={(e) => setSabor(e.target.value)} required placeholder="Ej: Chocolate con fresas" />
       </div>
 
       <div className="campo">
@@ -134,7 +140,7 @@ export default function FormularioPedido() {
 
       <div className="campo">
         <label>Notas o Detalles</label>
-        <textarea rows="3" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej: Sin nueces, escribir 'Feliz Cumpleaños'..."></textarea>
+        <textarea rows="3" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Ej: Sin nueces..."></textarea>
       </div>
 
       <button type="submit" className="btn-guardar" disabled={guardando}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore"; // 👈 Añadimos deleteDoc
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from './services/firebase';
 
 export default function ListaPedidos() {
@@ -8,6 +8,10 @@ export default function ListaPedidos() {
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [pedidoParaEditar, setPedidoParaEditar] = useState(null);
   const [busqueda, setBusqueda] = useState("");
+
+  // 👇 NUEVOS ESTADOS PARA LOS AVISOS MODERNOS
+  const [notificacion, setNotificacion] = useState({ texto: "", tipo: "" });
+  const [pedidoABorrar, setPedidoABorrar] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, "pedidos"), orderBy("fechaEntrega", "asc"));
@@ -20,6 +24,12 @@ export default function ListaPedidos() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Función para mostrar avisos que desaparecen solos
+  const mostrarAviso = (texto, tipo = "exito") => {
+    setNotificacion({ texto, tipo });
+    setTimeout(() => setNotificacion({ texto: "", tipo: "" }), 3000);
+  };
 
   // --- 📊 CÁLCULOS ---
   const totalHistorial = todosLosPedidos
@@ -38,15 +48,13 @@ export default function ListaPedidos() {
   });
 
   // --- 🗑️ LÓGICA PARA BORRAR ---
-  const borrarPedido = async (id) => {
-    const confirmar = window.confirm("¿Estás segura de que quieres borrar este pedido permanentemente? Esta acción no se puede deshacer.");
-    if (confirmar) {
-      try {
-        await deleteDoc(doc(db, "pedidos", id));
-        alert("🗑️ Pedido eliminado correctamente.");
-      } catch (error) {
-        alert("❌ Error al eliminar el pedido.");
-      }
+  const ejecutarBorrado = async () => {
+    try {
+      await deleteDoc(doc(db, "pedidos", pedidoABorrar.id));
+      setPedidoABorrar(null); // Cerramos el modal
+      mostrarAviso("🗑️ Pedido eliminado correctamente");
+    } catch (error) {
+      mostrarAviso("❌ Error al eliminar", "error");
     }
   };
 
@@ -60,8 +68,9 @@ export default function ListaPedidos() {
       const pedidoRef = doc(db, "pedidos", id);
       await updateDoc(pedidoRef, { estadoPedido: "Entregado" });
       setConfirmandoId(null);
+      mostrarAviso("✅ ¡Pedido entregado!");
     } catch (error) {
-      alert("❌ Error al actualizar.");
+      mostrarAviso("❌ Error al actualizar", "error");
     }
   };
 
@@ -79,9 +88,9 @@ export default function ListaPedidos() {
         notas: pedidoParaEditar.notas
       });
       setPedidoParaEditar(null);
-      alert("✅ Cambios guardados.");
+      mostrarAviso("✅ Cambios guardados");
     } catch (error) {
-      alert("❌ Error al guardar.");
+      mostrarAviso("❌ Error al guardar", "error");
     }
   };
 
@@ -93,6 +102,14 @@ export default function ListaPedidos() {
 
   return (
     <div className="lista-moderna">
+      
+      {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+      {notificacion.texto && (
+        <div className={`notificacion-flotante notificacion-${notificacion.tipo}`}>
+          {notificacion.texto}
+        </div>
+      )}
+
       <div className="finanzas-grid">
         <div className="card-finanzas historial"><span>Cobrado</span><h3>${totalHistorial.toLocaleString()}</h3></div>
         <div className="card-finanzas anticipos"><span>Anticipos</span><h3>${totalAnticiposPendientes.toLocaleString()}</h3></div>
@@ -118,8 +135,7 @@ export default function ListaPedidos() {
           <div key={pedido.id} className={`tarjeta-pedido-moderna ${verHistorial ? 'tarjeta-historial' : ''}`}>
             <div className="cabecera-pedido">
               <h3>{pedido.cliente}</h3>
-              {/* 🗑️ BOTÓN DE BORRAR EN LA ESQUINA */}
-              <button className="btn-borrar-icono" onClick={() => borrarPedido(pedido.id)}>🗑️</button>
+              <button className="btn-borrar-icono" onClick={() => setPedidoABorrar(pedido)}>🗑️</button>
             </div>
             
             <div className="cuerpo-pedido">
@@ -145,7 +161,21 @@ export default function ListaPedidos() {
         {pedidosFiltrados.length === 0 && <p className="mensaje-vacio">No hay resultados.</p>}
       </div>
 
-      {/* MODAL DE EDICIÓN */}
+      {/* 🗑️ MODAL DE CONFIRMACIÓN PARA BORRAR */}
+      {pedidoABorrar && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{textAlign: 'center'}}>
+            <h3 style={{color: '#d81b60'}}>¿Borrar pedido?</h3>
+            <p>Se eliminará el pedido de <strong>{pedidoABorrar.cliente}</strong> permanentemente.</p>
+            <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
+              <button className="btn-cancelar" onClick={() => setPedidoABorrar(null)}>No, volver</button>
+              <button className="btn-borrar-confirmar" onClick={ejecutarBorrado}>Sí, borrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🖼️ MODAL DE EDICIÓN */}
       {pedidoParaEditar && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -156,6 +186,14 @@ export default function ListaPedidos() {
               <div className="finanzas-inputs">
                 <div className="campo"><label>Precio</label><input type="number" value={pedidoParaEditar.precioTotal} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, precioTotal: e.target.value})} /></div>
                 <div className="campo"><label>Anticipo</label><input type="number" value={pedidoParaEditar.cantidadAnticipo} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, cantidadAnticipo: e.target.value})} /></div>
+              </div>
+              <div className="campo">
+                <label>Estado del Pago</label>
+                <select value={pedidoParaEditar.estadoPago} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, estadoPago: e.target.value})}>
+                    <option value="Pendiente">Sin anticipo</option>
+                    <option value="Anticipo">Anticipo entregado</option>
+                    <option value="Liquidado">Totalmente Liquidado</option>
+                </select>
               </div>
               <div className="campo"><label>Notas</label><textarea value={pedidoParaEditar.notas} onChange={(e) => setPedidoParaEditar({...pedidoParaEditar, notas: e.target.value})}></textarea></div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
