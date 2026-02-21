@@ -53,7 +53,7 @@ function App() {
   return (
     <div className="contenedor-principal">
       <div className="header">
-        <h1>Pastelería Ximena 🎂</h1>
+        <h1> Amena´s 🎂</h1>
         <button onClick={cerrarSesion} className="btn-salir">Salir 🚪</button>
       </div>
       
