@@ -6,6 +6,7 @@ import FormularioPedido from './FormularioPedido';
 import ListaPedidos from './ListaPedidos';
 import VistaCalendario from './VistaCalendario';
 import Login from './Login';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import './App.css';
 
 function App() {
@@ -83,6 +84,7 @@ function App() {
           )}
         </div>
       </div>
+      <SpeedInsights />
     </div>
   );
 }
